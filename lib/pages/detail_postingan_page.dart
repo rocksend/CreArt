@@ -1,7 +1,22 @@
 import 'package:flutter/material.dart';
+import '../creart_store.dart';
 
-class DetailPostinganPage extends StatelessWidget {
+class DetailPostinganPage extends StatefulWidget {
   const DetailPostinganPage({super.key});
+
+  @override
+  State<DetailPostinganPage> createState() =>
+      _DetailPostinganPageState();
+}
+
+class _DetailPostinganPageState
+    extends State<DetailPostinganPage> {
+
+  final CreArtStore store = CreArtStore.instance;
+
+  late final Artwork artwork = store.artworks.first;
+  bool _isLiked = false;
+  int _likes = 24;
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +39,17 @@ class DetailPostinganPage extends StatelessWidget {
                   Container(
                     height: 250,
                     width: double.infinity,
-                    decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(12)),
-                    child: const Center(child: Text('Karya utama - Ilustrasi', style: TextStyle(color: Colors.grey))),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF3C7A7), Color(0xFFE9DDFB), Color(0xFFD8E8E3)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.palette_outlined, size: 48, color: Color(0xFF7052C8)),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   const Text('ILUSTRASI', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
@@ -54,9 +78,32 @@ class DetailPostinganPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildActionButton(Icons.favorite_border, '24 apresiasi'),
-                      _buildActionButton(Icons.bookmark_border, 'Simpan'),
-                      _buildActionButton(Icons.share_outlined, 'Bagikan'),
+                      _buildActionButton(
+                        context,
+                        _isLiked ? Icons.favorite : Icons.favorite_border,
+                        '$_likes apresiasi',
+                        isActive: _isLiked,
+                        onPressed: () => setState(() {
+                          _isLiked = !_isLiked;
+                          _likes += _isLiked ? 1 : -1;
+                        }),
+                      ),
+                      _buildActionButton(
+                        context,
+                        artwork.isSaved ? Icons.bookmark : Icons.bookmark_border,
+artwork.isSaved ? 'Tersimpan' : 'Simpan',
+isActive: artwork.isSaved,
+onPressed: () {
+  store.toggleSave(artwork);
+  setState(() {});
+},
+                      ),
+                      _buildActionButton(
+                        context,
+                        Icons.share_outlined,
+                        'Bagikan',
+                        onPressed: () {},
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -114,16 +161,25 @@ class DetailPostinganPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label) {
+  Widget _buildActionButton(
+    BuildContext context,
+    IconData icon,
+    String label, {
+    bool isActive = false,
+    required VoidCallback onPressed,
+  }) {
+    final color = isActive
+        ? Theme.of(context).colorScheme.secondary
+        : Theme.of(context).colorScheme.primary;
     return OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.black,
-        side: BorderSide(color: Colors.grey.shade300),
+        foregroundColor: color,
+        side: BorderSide(color: isActive ? color : const Color(0xFFE9E3F0)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
-      icon: Icon(icon, size: 16),
+      icon: Icon(icon, size: 16, color: color),
       label: Text(label, style: const TextStyle(fontSize: 12)),
-      onPressed: () {},
+      onPressed: onPressed,
     );
   }
 }

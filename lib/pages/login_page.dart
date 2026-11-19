@@ -33,11 +33,15 @@ class LoginPage extends StatelessWidget {
                 height: 180,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFE9DDFB), Color(0xFFF6D8C8), Color(0xFFD8E8E3)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Center(
-                  child: Text('Ruang karya digital', style: TextStyle(color: Colors.grey)),
+                  child: Icon(Icons.palette_outlined, size: 52, color: Color(0xFF7052C8)),
                 ),
               ),
               const SizedBox(height: 32),
@@ -80,7 +84,7 @@ class LoginPage extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A1A1A),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),

@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 
-class BuatPostinganPage extends StatelessWidget {
+class BuatPostinganPage extends StatefulWidget {
   const BuatPostinganPage({super.key});
+
+  @override
+  State<BuatPostinganPage> createState() => _BuatPostinganPageState();
+}
+
+class _BuatPostinganPageState extends State<BuatPostinganPage> {
+  bool _isVisual = true;
+  String? _selectedCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +32,15 @@ class BuatPostinganPage extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A1A1A),
-                      foregroundColor: Colors.white,
+                      backgroundColor: _isVisual
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.white,
+                      foregroundColor: _isVisual
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.primary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                    onPressed: () {},
+                    onPressed: () => setState(() => _isVisual = true),
                     child: const Text('Karya visual'),
                   ),
                 ),
@@ -36,11 +48,16 @@ class BuatPostinganPage extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.black,
-                      side: BorderSide(color: Colors.grey.shade300),
+                      foregroundColor: !_isVisual
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.primary,
+                      backgroundColor: !_isVisual
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.white,
+                      side: const BorderSide(color: Color(0xFFE9E3F0)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                    onPressed: () {},
+                    onPressed: () => setState(() => _isVisual = false),
                     child: const Text('Tulisan'),
                   ),
                 ),
@@ -52,17 +69,32 @@ class BuatPostinganPage extends StatelessWidget {
               height: 150,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.grey[100],
-                border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+                color: const Color(0xFFF5F0FC),
+                border: Border.all(color: const Color(0xFFDCD1F2)),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Column(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.upload_file, size: 32, color: Colors.grey),
+                  Icon(
+                    _isVisual ? Icons.upload_file : Icons.edit_note,
+                    size: 32,
+                    color: Color(0xFF7052C8),
+                  ),
                   SizedBox(height: 8),
-                  Text('Pilih karya dari perangkat', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text('Pratinjau karya akan muncul di sini', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text(
+                    _isVisual
+                        ? 'Pilih karya dari perangkat'
+                        : 'Tambahkan sampul tulisan (opsional)',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    _isVisual
+                        ? 'Pratinjau karya akan muncul di sini'
+                        : 'Kamu bisa menulis cerita di bagian deskripsi',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             ),
@@ -89,11 +121,12 @@ class BuatPostinganPage extends StatelessWidget {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   isExpanded: true,
+                  value: _selectedCategory,
                   hint: const Text('Pilih kategori seni', style: TextStyle(fontSize: 14)),
                   items: <String>['Ilustrasi', 'Fotografi', 'Desain'].map((String value) {
                     return DropdownMenuItem<String>(value: value, child: Text(value));
                   }).toList(),
-                  onChanged: (_) {},
+                  onChanged: (value) => setState(() => _selectedCategory = value),
                 ),
               ),
             ),
@@ -108,7 +141,7 @@ class BuatPostinganPage extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A1A1A),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),

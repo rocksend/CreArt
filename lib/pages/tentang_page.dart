@@ -7,7 +7,10 @@ class TentangPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text('Tentang CreArt', style: TextStyle(fontSize: 16)),
         centerTitle: true,
       ),
@@ -16,7 +19,14 @@ class TentangPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('CreArt', style: TextStyle(fontSize: 32, fontFamily: 'Serif', fontWeight: FontWeight.bold)),
+            const Text(
+              'CreArt',
+              style: TextStyle(
+                fontSize: 32,
+                fontFamily: 'Serif',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const Text('Create + Art', style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 24),
             const Text(
@@ -29,18 +39,37 @@ class TentangPage extends StatelessWidget {
               style: TextStyle(fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 32),
-            const Text('Untuk siapa saja', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Untuk siapa saja',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(Icons.brush, color: Colors.black),
-              title: const Text('Untuk kreator', style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text('Bagikan karya dan tulisan, bangun profil, dan terhubung lewat apresiasi.'),
+              leading: Icon(
+                Icons.brush,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text(
+                'Untuk kreator',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text(
+                'Bagikan karya dan tulisan, bangun profil, dan terhubung lewat apresiasi.',
+              ),
               contentPadding: EdgeInsets.zero,
             ),
             ListTile(
-              leading: const Icon(Icons.visibility, color: Colors.black),
-              title: const Text('Untuk penikmat seni', style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text('Jelajahi kategori, temukan kreator, dan simpan inspirasi dalam koleksi.'),
+              leading: Icon(
+                Icons.visibility,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              title: const Text(
+                'Untuk penikmat seni',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text(
+                'Jelajahi kategori, temukan kreator, dan simpan inspirasi dalam koleksi.',
+              ),
               contentPadding: EdgeInsets.zero,
             ),
           ],
