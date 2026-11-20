@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import 'beranda_page.dart';
@@ -17,12 +16,18 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    BerandaPage(),
-    KategoriPage(),
-    BuatPostinganPage(),
-    KoleksiPage(),
-    ProfilPage(),
+  late final List<Widget> _pages = [
+    const BerandaPage(),
+    const KategoriPage(),
+    BuatPostinganPage(
+      onPublished: () {
+        setState(() {
+          _selectedIndex = 0;
+        });
+      },
+    ),
+    const KoleksiPage(),
+    const ProfilPage(),
   ];
 
   @override

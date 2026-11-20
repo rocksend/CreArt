@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import '../creart_store.dart';
 
 class BuatPostinganPage extends StatefulWidget {
-  const BuatPostinganPage({super.key});
+  final VoidCallback? onPublished;
+
+  const BuatPostinganPage({
+    super.key,
+    this.onPublished,
+  });
 
   @override
   State<BuatPostinganPage> createState() => _BuatPostinganPageState();
@@ -24,6 +29,8 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
   }
 
   Future<void> _publishArtwork() async {
+    if (_isLoading) return;
+
     final title = _titleController.text.trim();
     final desc = _descController.text.trim();
 
@@ -50,22 +57,26 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
         category: _selectedCategory!,
       );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Karya berhasil dipublikasikan!')),
-        );
-        Navigator.pop(context);
+      if (!mounted) return;
+
+      _titleController.clear();
+      _descController.clear();
+      setState(() {
+        _selectedCategory = null;
+        _isLoading = false;
+      });
+
+      if (widget.onPublished != null) {
+        widget.onPublished!();
+      } else if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mempublikasikan: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal mempublikasikan: $e')),
+      );
     }
   }
 
@@ -84,7 +95,6 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Toggle Visual / Tulisan
             Row(
               children: [
                 Expanded(
@@ -126,8 +136,6 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
               ],
             ),
             const SizedBox(height: 24),
-
-            // Box Upload (Placeholder sebelum integrasi Cloudinary)
             Container(
               height: 150,
               width: double.infinity,
@@ -163,8 +171,6 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Input Judul
             const Text(
               'Judul karya',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
@@ -186,8 +192,6 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Input Deskripsi
             const Text(
               'Deskripsi',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
@@ -210,8 +214,6 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Pilihan Kategori
             const Text(
               'Kategori',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
@@ -246,10 +248,7 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 32),
-
-            // Tombol Publikasikan
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
