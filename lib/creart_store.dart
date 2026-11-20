@@ -1,4 +1,5 @@
 
+
 import 'package:flutter/material.dart';
 
 class Artwork {
@@ -15,6 +16,9 @@ class Artwork {
   bool isLiked;
   bool isSaved;
 
+  // Status moderasi postingan
+  String status;
+
   Artwork({
     required this.id,
     required this.title,
@@ -26,6 +30,7 @@ class Artwork {
     this.likes = 0,
     this.isLiked = false,
     this.isSaved = false,
+    this.status = 'aktif',
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 }
@@ -86,11 +91,49 @@ class CreArtStore extends ChangeNotifier {
 
   final List<String> comments = [];
 
-  List<Artwork> get savedArtworks =>
-      artworks.where((art) => art.isSaved).toList();
+  // Mengambil postingan yang masih aktif
+  List<Artwork> get activeArtworks =>
+      artworks.where((art) => art.status == 'aktif').toList();
 
+  // Mengambil postingan yang sudah dihapus
+  List<Artwork> get deletedArtworks =>
+      artworks.where((art) => art.status == 'terhapus').toList();
+
+  // Menghitung jumlah postingan aktif
+  int get totalActiveArtworks => activeArtworks.length;
+
+  // Menghitung jumlah postingan terhapus
+  int get totalDeletedArtworks => deletedArtworks.length;
+
+  // Mengambil karya yang disimpan dan masih aktif
+  List<Artwork> get savedArtworks =>
+      activeArtworks.where((art) => art.isSaved).toList();
+
+  // Mengambil karya milik pengguna yang masih aktif
   List<Artwork> get myArtworks =>
-      artworks.where((art) => art.creator == userName).toList();
+      activeArtworks.where((art) => art.creator == userName).toList();
+
+  // Mencari postingan berdasarkan ID
+  Artwork? getArtworkById(String id) {
+    try {
+      return artworks.firstWhere((art) => art.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Mengubah status postingan menjadi terhapus
+  bool deleteArtwork(String id) {
+    final artwork = getArtworkById(id);
+
+    if (artwork == null || artwork.status == 'terhapus') {
+      return false;
+    }
+
+    artwork.status = 'terhapus';
+    notifyListeners();
+    return true;
+  }
 
   void addArtwork({
     required String title,
@@ -113,12 +156,16 @@ class CreArtStore extends ChangeNotifier {
   }
 
   void toggleLike(Artwork artwork) {
+    if (artwork.status == 'terhapus') return;
+
     artwork.isLiked = !artwork.isLiked;
     artwork.likes += artwork.isLiked ? 1 : -1;
     notifyListeners();
   }
 
   void toggleSave(Artwork artwork) {
+    if (artwork.status == 'terhapus') return;
+
     artwork.isSaved = !artwork.isSaved;
     notifyListeners();
   }
@@ -173,3 +220,4 @@ class CreArtStore extends ChangeNotifier {
     notifyListeners();
   }
 }
+

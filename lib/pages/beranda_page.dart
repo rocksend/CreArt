@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
 
+import 'package:flutter/material.dart';
+import 'beranda_admin_page.dart';
+import '../creart_store.dart';
 import 'detail_postingan_page.dart';
 
 class BerandaPage extends StatefulWidget {
@@ -14,161 +16,223 @@ class _BerandaPageState extends State<BerandaPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('CreArt', style: TextStyle(fontFamily: 'Serif')),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Halo, Ardi.',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const Text(
-              'Temukan ide untuk karya berikutnya.',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
+    final store = CreArtStore.instance;
 
-            // Search Bar
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'Cari karya atau kreator',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
-              ),
-            ),
-            const SizedBox(height: 16),
+    return AnimatedBuilder(
+      animation: store,
+      builder: (context, child) {
+        // Mengambil hanya postingan yang masih aktif.
+        final activeArtworks = store.activeArtworks;
 
-            // Kategori Chips
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildChip('Semua'),
-                  _buildChip('Ilustrasi'),
-                  _buildChip('Fotografi'),
-                  _buildChip('Desain'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
+        // Filter berdasarkan kategori yang dipilih.
+        final filteredArtworks = _selectedCategory == 'Semua'
+            ? activeArtworks
+            : activeArtworks
+                .where((art) => art.category == _selectedCategory)
+                .toList();
 
-            // Section: Untuk inspirasimu
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Untuk inspirasimu',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    'Lihat semua',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
+        // Dua karya pertama untuk bagian inspirasi.
+        final inspirationArtworks = filteredArtworks.take(2).toList();
 
-            // Horizontal Card List
-            SizedBox(
-              height: 200,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _buildArtCard(
-                    context,
-                    'Ruang Sunyi',
-                    'Nara Putri',
-                    '86',
-                    'Digital Art',
-                  ),
-                  _buildArtCard(
-                    context,
-                    'Jeda di Pagi Hari',
-                    'Ayu Laras',
-                    '52',
-                    'Fotografi',
-                  ),
-                ],
-              ),
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'CreArt',
+              style: TextStyle(fontFamily: 'Serif'),
             ),
-
-            const SizedBox(height: 24),
-
-            // Section: Karya terbaru
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Karya terbaru',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    'Jelajahi',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-
-            // Vertical List (Karya Terbaru)
-            _buildListArtCard(
-              'Senja di Kota',
-              'Dimas Pratama',
-              'Ilustrasi • 24 apresiasi',
-            ),
-            _buildListArtCard(
-              'Bentuk dan Ruang',
-              'Bima Aditya',
-              'Desain • 18 apresiasi',
-            ),
-          ],
+            centerTitle: false,
+            actions: [
+  IconButton(
+    icon: const Icon(Icons.admin_panel_settings_outlined),
+    tooltip: 'Buka Dashboard Admin',
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const BerandaAdminPage(),
         ),
-      ),
+      );
+    },
+  ),
+  IconButton(
+    icon: const Icon(Icons.notifications_none),
+    onPressed: () {},
+  ),
+],
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Halo, Ardi.',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Text(
+                  'Temukan ide untuk karya berikutnya.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Search Bar
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Cari karya atau kreator',
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: Colors.grey,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Colors.grey.shade300,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Colors.grey.shade300,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Kategori Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildChip('Semua'),
+                      _buildChip('Ilustrasi'),
+                      _buildChip('Fotografi'),
+                      _buildChip('Desain'),
+                      _buildChip('Digital Art'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Section: Untuk inspirasimu
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Untuk inspirasimu',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      child: const Text(
+                        'Lihat semua',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Horizontal Card List
+                SizedBox(
+                  height: 200,
+                  child: inspirationArtworks.isEmpty
+                      ? const Center(
+                          child: Text('Belum ada karya tersedia.'),
+                        )
+                      : ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: inspirationArtworks.map((art) {
+                            return _buildArtCard(context, art);
+                          }).toList(),
+                        ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Section: Karya terbaru
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Karya terbaru',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      child: const Text(
+                        'Jelajahi',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Vertical List
+                if (filteredArtworks.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Text('Tidak ada karya dalam kategori ini.'),
+                    ),
+                  )
+                else
+                  ...filteredArtworks.map((art) {
+                    return _buildListArtCard(art);
+                  }),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  // Widget bantuan untuk Chip Kategori
+  // Widget Chip Kategori
   Widget _buildChip(String label) {
     final isSelected = _selectedCategory == label;
+
     return Padding(
       padding: const EdgeInsets.only(right: 8.0),
       child: ChoiceChip(
         label: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF514B5E),
+            color: isSelected
+                ? Colors.white
+                : const Color(0xFF514B5E),
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
         ),
         selected: isSelected,
-        onSelected: (_) => setState(() => _selectedCategory = label),
+        onSelected: (_) {
+          setState(() {
+            _selectedCategory = label;
+          });
+        },
         selectedColor: Theme.of(context).colorScheme.primary,
         backgroundColor: Colors.white,
         side: BorderSide(
@@ -176,7 +240,9 @@ class _BerandaPageState extends State<BerandaPage> {
               ? Theme.of(context).colorScheme.primary
               : const Color(0xFFE9E3F0),
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         labelPadding: const EdgeInsets.symmetric(horizontal: 6),
         visualDensity: VisualDensity.compact,
@@ -184,20 +250,15 @@ class _BerandaPageState extends State<BerandaPage> {
     );
   }
 
-  // Widget bantuan untuk Kartu "Untuk inspirasimu"
-  Widget _buildArtCard(
-    BuildContext context,
-    String title,
-    String creator,
-    String likes,
-    String category,
-  ) {
+  // Kartu Untuk Inspirasimu
+  Widget _buildArtCard(BuildContext context, Artwork artwork) {
     return GestureDetector(
       onTap: () {
-        // Perintah untuk pindah ke halaman Detail Postingan
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const DetailPostinganPage()),
+          MaterialPageRoute(
+            builder: (context) => const DetailPostinganPage(),
+          ),
         );
       },
       child: Container(
@@ -209,29 +270,44 @@ class _BerandaPageState extends State<BerandaPage> {
             Container(
               height: 140,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                gradient: LinearGradient(
+                  colors: [
+                    artwork.color1,
+                    artwork.color2,
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
                 child: Text(
-                  category,
+                  artwork.category,
                   style: const TextStyle(color: Colors.grey),
                 ),
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              artwork.title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  creator,
-                  style: const TextStyle(color: Colors.grey, fontSize: 10),
+                Expanded(
+                  child: Text(
+                    artwork.creator,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 10,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 Row(
                   children: [
@@ -242,8 +318,11 @@ class _BerandaPageState extends State<BerandaPage> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      likes,
-                      style: const TextStyle(color: Colors.grey, fontSize: 10),
+                      artwork.likes.toString(),
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 10,
+                      ),
                     ),
                   ],
                 ),
@@ -251,12 +330,12 @@ class _BerandaPageState extends State<BerandaPage> {
             ),
           ],
         ),
-      ), // <-- PENUTUP CONTAINER
-    ); // <-- INI PENUTUP GESTURE DETECTOR YANG TADI HILANG
+      ),
+    );
   }
 
-  // Widget bantuan untuk Kartu "Karya terbaru"
-  Widget _buildListArtCard(String title, String creator, String desc) {
+  // Kartu Karya Terbaru
+  Widget _buildListArtCard(Artwork artwork) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
@@ -265,13 +344,18 @@ class _BerandaPageState extends State<BerandaPage> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              gradient: LinearGradient(
+                colors: [
+                  artwork.color1,
+                  artwork.color2,
+                ],
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Center(
-              child: Text(
-                'Img',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+              child: Icon(
+                Icons.image_outlined,
+                color: Colors.white,
               ),
             ),
           ),
@@ -281,18 +365,24 @@ class _BerandaPageState extends State<BerandaPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  artwork.title,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(creator, style: const TextStyle(fontSize: 14)),
+                Text(
+                  artwork.creator,
+                  style: const TextStyle(fontSize: 14),
+                ),
                 const SizedBox(height: 4),
                 Text(
-                  desc,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  '${artwork.category} • ${artwork.likes} apresiasi',
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
