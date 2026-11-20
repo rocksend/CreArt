@@ -1,4 +1,4 @@
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class Artwork {
@@ -28,12 +28,48 @@ class Artwork {
     this.isSaved = false,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
+
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'creator': creator,
+      'category': category,
+      'description': description,
+      'color1': color1.value,
+      'color2': color2.value,
+      'likes': likes,
+      'isLiked': isLiked,
+      'isSaved': isSaved,
+      'createdAt': Timestamp.fromDate(createdAt),
+    };
+  }
+
+  factory Artwork.fromFirestore(String docId, Map<String, dynamic> data) {
+    final ts = data['createdAt'];
+    return Artwork(
+      id: docId,
+      title: data['title'] ?? '',
+      creator: data['creator'] ?? '',
+      category: data['category'] ?? 'Lainnya',
+      description: data['description'] ?? '',
+      color1: Color(data['color1'] ?? 0xFFE9DDFB),
+      color2: Color(data['color2'] ?? 0xFFF3C7A7),
+      likes: data['likes'] ?? 0,
+      isLiked: data['isLiked'] ?? false,
+      isSaved: data['isSaved'] ?? false,
+      createdAt: ts is Timestamp ? ts.toDate() : DateTime.now(),
+    );
+  }
 }
 
 class CreArtStore extends ChangeNotifier {
-  CreArtStore._();
+  CreArtStore._() {
+    initFirestoreListener();
+  }
 
   static final CreArtStore instance = CreArtStore._();
+
+  final _artworksRef = FirebaseFirestore.instance.collection('artworks');
 
   String userName = 'Ardiansyah';
   String username = 'ardiansyahganteng';
@@ -41,50 +77,64 @@ class CreArtStore extends ChangeNotifier {
   String bio =
       'Merekam cerita kota lewat garis dan warna. Selalu mencari sudut pandang baru.';
 
-  final List<Artwork> artworks = [
-    Artwork(
-      id: '1',
-      title: 'Senja di Kota',
-      creator: 'Dimas Pratama',
-      category: 'Ilustrasi',
-      description: 'Sebuah jeda di tengah riuh kota.',
-      likes: 24,
-    ),
-    Artwork(
-      id: '2',
-      title: 'Ruang Sunyi',
-      creator: 'Nara Putri',
-      category: 'Digital Art',
-      description: 'Tentang ruang, ketenangan, dan imajinasi.',
-      likes: 86,
-    ),
-    Artwork(
-      id: '3',
-      title: 'Jeda di Pagi Hari',
-      creator: 'Ayu Laras',
-      category: 'Fotografi',
-      description: 'Mengabadikan keindahan pagi.',
-      likes: 52,
-    ),
-    Artwork(
-      id: '4',
-      title: 'Garis Kota',
-      creator: 'Bima Aditya',
-      category: 'Desain',
-      description: 'Eksplorasi bentuk dan ruang perkotaan.',
-      likes: 32,
-    ),
-    Artwork(
-      id: '5',
-      title: 'Kebun Imaji',
-      creator: 'Nara Putri',
-      category: 'Ilustrasi',
-      description: 'Taman kecil penuh warna dan cerita.',
-      likes: 41,
-    ),
-  ];
+  List<Artwork> artworks = [];
+  bool isLoading = true;
 
-  final List<String> comments = [];
+  void initFirestoreListener() {
+    _artworksRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+      artworks = snapshot.docs
+          .map((doc) => Artwork.fromFirestore(doc.id, doc.data()))
+          .toList();
+      isLoading = false;
+      notifyListeners();
+    }, onError: (error) {
+      isLoading = false;
+      notifyListeners();
+    });
+  }
+
+  Future<void> addArtwork({
+    required String title,
+    required String description,
+    required String category,
+  }) async {
+    final newArt = Artwork(
+      id: '',
+      title: title,
+      creator: userName,
+      category: category,
+      description: description,
+    );
+
+    await _artworksRef.add(newArt.toMap());
+  }
+
+  Future<void> toggleLike(Artwork artwork) async {
+    artwork.isLiked = !artwork.isLiked;
+    artwork.likes += artwork.isLiked ? 1 : -1;
+    notifyListeners();
+
+    if (artwork.id.isNotEmpty) {
+      await _artworksRef.doc(artwork.id).update({
+        'likes': artwork.likes,
+        'isLiked': artwork.isLiked,
+      });
+    }
+  }
+
+  Future<void> toggleSave(Artwork artwork) async {
+    artwork.isSaved = !artwork.isSaved;
+    notifyListeners();
+
+    if (artwork.id.isNotEmpty) {
+      await _artworksRef.doc(artwork.id).update({
+        'isSaved': artwork.isSaved,
+      });
+    }
+  }
 
   List<Artwork> get savedArtworks =>
       artworks.where((art) => art.isSaved).toList();
@@ -92,84 +142,8 @@ class CreArtStore extends ChangeNotifier {
   List<Artwork> get myArtworks =>
       artworks.where((art) => art.creator == userName).toList();
 
-  void addArtwork({
-    required String title,
-    required String description,
-    required String category,
-  }) {
-    artworks.insert(
-      0,
-      Artwork(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        title: title,
-        creator: userName,
-        category: category,
-        description: description,
-        color1: const Color(0xFFE9DDFB),
-        color2: const Color(0xFFD8E8E3),
-      ),
-    );
-    notifyListeners();
-  }
-
-  void toggleLike(Artwork artwork) {
-    artwork.isLiked = !artwork.isLiked;
-    artwork.likes += artwork.isLiked ? 1 : -1;
-    notifyListeners();
-  }
-
-  void toggleSave(Artwork artwork) {
-    artwork.isSaved = !artwork.isSaved;
-    notifyListeners();
-  }
-
-  void addComment(String comment) {
-    if (comment.trim().isEmpty) return;
-    comments.insert(0, comment.trim());
-    notifyListeners();
-  }
-
   bool login(String identifier, String password) {
-    if (identifier.trim().isEmpty || password.trim().isEmpty) {
-      return false;
-    }
+    if (identifier.trim().isEmpty || password.trim().isEmpty) return false;
     return true;
-  }
-
-  bool register({
-    required String name,
-    required String username,
-    required String email,
-    required String password,
-    required String confirmation,
-  }) {
-    if (name.trim().isEmpty ||
-        username.trim().isEmpty ||
-        email.trim().isEmpty ||
-        password.isEmpty ||
-        confirmation.isEmpty ||
-        !email.contains('@') ||
-        password.length < 6 ||
-        password != confirmation) {
-      return false;
-    }
-
-    userName = name.trim();
-    this.username = username.trim();
-    this.email = email.trim();
-
-    notifyListeners();
-    return true;
-  }
-
-  void updateProfile({
-    required String name,
-    required String username,
-    required String bio,
-  }) {
-    userName = name;
-    this.username = username;
-    this.bio = bio;
-    notifyListeners();
   }
 }

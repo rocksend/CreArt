@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
-import 'pages/login_page.dart'; // Import halaman pertama
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'pages/login_page.dart';
 
-void main() {
+void main() async {
+  // Wajib dipanggil sebelum inisialisasi async service
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inisialisasi Firebase menggunakan file konfigurasi yang baru dibuat
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const CreArtApp());
 }
 
@@ -66,7 +76,7 @@ class CreArtApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginPage(), // Langsung memanggil LoginPage
+      home: const LoginPage(),
     );
   }
 }

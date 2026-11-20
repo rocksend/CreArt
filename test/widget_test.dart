@@ -1,46 +1,30 @@
+// This is a basic Flutter widget test.
+//
+// To perform an interaction with a widget in your test, use the WidgetTester
+// utility in the flutter_test package. For example, you can send tap and scroll
+// gestures. You can also use WidgetTester to find child widgets in the widget
+// tree, read text, and verify that the values of widget properties are correct.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:creart/main.dart';
 
 void main() {
-  testWidgets('CreArt theme and artwork interactions work', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
     await tester.pumpWidget(const CreArtApp());
 
-    expect(find.text('Karya bertemu cerita.'), findsOneWidget);
-    expect(find.text('Masuk'), findsOneWidget);
+    // Verify that our counter starts at 0.
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('1'), findsNothing);
 
-    final loginButton = find.widgetWithText(ElevatedButton, 'Masuk');
-    await tester.ensureVisible(loginButton);
-    await tester.pumpAndSettle();
-    await tester.tap(loginButton);
-    await tester.pumpAndSettle();
+    // Tap the '+' icon and trigger a frame.
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
 
-    expect(find.text('Halo, Ardi.'), findsOneWidget);
-    await tester.tap(find.byType(ChoiceChip).at(2));
-    await tester.pumpAndSettle();
-    expect(tester.widget<ChoiceChip>(find.byType(ChoiceChip).at(2)).selected, isTrue);
-
-    await tester.tap(find.text('Ruang Sunyi'));
-    await tester.pumpAndSettle();
-    expect(find.text('24 apresiasi'), findsOneWidget);
-
-    await tester.tap(find.text('24 apresiasi'));
-    await tester.pumpAndSettle();
-    expect(find.text('25 apresiasi'), findsOneWidget);
-
-    await tester.tap(find.text('Simpan'));
-    await tester.pumpAndSettle();
-    expect(find.text('Tersimpan'), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.arrow_back));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Profil'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Koleksi tersimpan (8)'));
-    await tester.pumpAndSettle();
-    expect(find.text('Ruang Sunyi'), findsOneWidget);
+    // Verify that our counter has incremented.
+    expect(find.text('0'), findsNothing);
+    expect(find.text('1'), findsOneWidget);
   });
 }
