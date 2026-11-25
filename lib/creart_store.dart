@@ -1,6 +1,10 @@
 
+import 'dart:convert';
+import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class Artwork {
   final String id;
@@ -8,6 +12,7 @@ class Artwork {
   final String creator;
   final String category;
   final String description;
+  final String? imageUrl;
   final Color color1;
   final Color color2;
   final DateTime createdAt;
@@ -15,8 +20,6 @@ class Artwork {
   int likes;
   bool isLiked;
   bool isSaved;
-
-  // Status moderasi postingan
   String status;
 
   Artwork({
@@ -25,6 +28,7 @@ class Artwork {
     required this.creator,
     required this.category,
     required this.description,
+    this.imageUrl,
     this.color1 = const Color(0xFFE9DDFB),
     this.color2 = const Color(0xFFF3C7A7),
     this.likes = 0,
@@ -33,87 +37,214 @@ class Artwork {
     this.status = 'aktif',
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
+
+  Map<String, dynamic> toMap() {
+    return {
+      "title": title,
+      "creator": creator,
+      "category": category,
+      "description": description,
+      "imageUrl": imageUrl,
+      "color1": color1.value,
+      "color2": color2.value,
+      "likes": likes,
+      "isLiked": isLiked,
+      "isSaved": isSaved,
+      "status": status,
+      "createdAt": Timestamp.fromDate(createdAt),
+    };
+  }
+
+  factory Artwork.fromFirestore(
+    String docId,
+    Map<String, dynamic> data,
+  ) {
+    final ts = data['createdAt'];
+    final rawImageUrl = data['imageUrl'];
+
+    return Artwork(
+      id: docId,
+      title: data['title'] ?? '',
+      creator: data['creator'] ?? '',
+      category: data['category'] ?? 'Lainnya',
+      description: data['description'] ?? '',
+      imageUrl: rawImageUrl is String && rawImageUrl.isNotEmpty
+          ? rawImageUrl
+          : null,
+      color1: Color(data['color1'] ?? 0xFFE9DDFB),
+      color2: Color(data['color2'] ?? 0xFFF3C7A7),
+      likes: data['likes'] ?? 0,
+      isLiked: data['isLiked'] ?? false,
+      isSaved: data['isSaved'] ?? false,
+      status: data['status'] ?? 'aktif',
+      createdAt: ts is Timestamp ? ts.toDate() : DateTime.now(),
+    );
+  }
 }
 
 class CreArtStore extends ChangeNotifier {
-  CreArtStore._();
+  CreArtStore._() {
+    initFirestoreListener();
+  }
 
   static final CreArtStore instance = CreArtStore._();
+
+  static const String _cloudinaryCloudName = 'wbesiexk';
+  static const String _cloudinaryUploadPreset = 'creart_unsigned';
+
+  final _artworksRef =
+      FirebaseFirestore.instance.collection('artworks');
 
   String userName = 'Ardiansyah';
   String username = 'ardiansyahganteng';
   String email = 'ardi@email.com';
   String bio =
-      'Merekam cerita kota lewat garis dan warna. Selalu mencari sudut pandang baru.';
+      'Merekam cerita kota lewat garis dan warna. '
+      'Selalu mencari sudut pandang baru.';
 
-  final List<Artwork> artworks = [
-    Artwork(
-      id: '1',
-      title: 'Senja di Kota',
-      creator: 'Dimas Pratama',
-      category: 'Ilustrasi',
-      description: 'Sebuah jeda di tengah riuh kota.',
-      likes: 24,
-    ),
-    Artwork(
-      id: '2',
-      title: 'Ruang Sunyi',
-      creator: 'Nara Putri',
-      category: 'Digital Art',
-      description: 'Tentang ruang, ketenangan, dan imajinasi.',
-      likes: 86,
-    ),
-    Artwork(
-      id: '3',
-      title: 'Jeda di Pagi Hari',
-      creator: 'Ayu Laras',
-      category: 'Fotografi',
-      description: 'Mengabadikan keindahan pagi.',
-      likes: 52,
-    ),
-    Artwork(
-      id: '4',
-      title: 'Garis Kota',
-      creator: 'Bima Aditya',
-      category: 'Desain',
-      description: 'Eksplorasi bentuk dan ruang perkotaan.',
-      likes: 32,
-    ),
-    Artwork(
-      id: '5',
-      title: 'Kebun Imaji',
-      creator: 'Nara Putri',
-      category: 'Ilustrasi',
-      description: 'Taman kecil penuh warna dan cerita.',
-      likes: 41,
-    ),
-  ];
+  List<Artwork> artworks = [];
+  List<String> comments = [];
 
-  final List<String> comments = [];
+  bool isLoading = true;
 
-  // Mengambil postingan yang masih aktif
+  void initFirestoreListener() {
+    _artworksRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+      artworks = snapshot.docs
+          .map((doc) => Artwork.fromFirestore(doc.id, doc.data()))
+          .toList();
+
+      isLoading = false;
+      notifyListeners();
+    }, onError: (error) {
+      isLoading = false;
+      notifyListeners();
+    });
+  }
+
+  Future<String> _uploadToCloudinary(File imageFile) async {
+    final uri = Uri.parse(
+      'https://api.cloudinary.com/v1_1/'
+      '$_cloudinaryCloudName/image/upload',
+    );
+
+    final request = http.MultipartRequest('POST', uri)
+      ..fields['upload_preset'] = _cloudinaryUploadPreset
+      ..files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          imageFile.path,
+        ),
+      );
+
+    final streamedResponse = await request.send();
+    final responseBody =
+        await streamedResponse.stream.bytesToString();
+
+    if (streamedResponse.statusCode != 200 &&
+        streamedResponse.statusCode != 201) {
+      throw Exception(
+        'Upload ke Cloudinary gagal '
+        '(${streamedResponse.statusCode}): $responseBody',
+      );
+    }
+
+    final decoded =
+        jsonDecode(responseBody) as Map<String, dynamic>;
+
+    final secureUrl = decoded['secure_url'] as String?;
+
+    if (secureUrl == null || secureUrl.isEmpty) {
+      throw Exception(
+        'URL gambar tidak ditemukan pada respons Cloudinary.',
+ 
+      );
+    }
+
+    return secureUrl;
+  }
+
+  Future<void> addArtwork({
+    required String title,
+    required String description,
+    required String category,
+    File? imageFile,
+  }) async {
+    String? uploadedImageUrl;
+
+    if (imageFile != null) {
+      uploadedImageUrl =
+          await _uploadToCloudinary(imageFile);
+    }
+
+    final newArt = Artwork(
+      id: '',
+      title: title,
+      creator: userName,
+      category: category,
+      description: description,
+      imageUrl: uploadedImageUrl,
+      status: 'aktif',
+    );
+
+    await _artworksRef.add(newArt.toMap());
+  }
+
+  Future<void> toggleLike(Artwork artwork) async {
+    if (artwork.status == 'terhapus') return;
+
+    artwork.isLiked = !artwork.isLiked;
+    artwork.likes += artwork.isLiked ? 1 : -1;
+
+    notifyListeners();
+
+    if (artwork.id.isNotEmpty) {
+      await _artworksRef.doc(artwork.id).update({
+        'likes': artwork.likes,
+        'isLiked': artwork.isLiked,
+      });
+    }
+  }
+
+  Future<void> toggleSave(Artwork artwork) async {
+    if (artwork.status == 'terhapus') return;
+
+    artwork.isSaved = !artwork.isSaved;
+
+    notifyListeners();
+
+    if (artwork.id.isNotEmpty) {
+      await _artworksRef.doc(artwork.id).update({
+        'isSaved': artwork.isSaved,
+      });
+    }
+  }
+
+  // Postingan yang masih aktif
   List<Artwork> get activeArtworks =>
       artworks.where((art) => art.status == 'aktif').toList();
 
-  // Mengambil postingan yang sudah dihapus
+  // Postingan yang telah dihapus Admin
   List<Artwork> get deletedArtworks =>
       artworks.where((art) => art.status == 'terhapus').toList();
 
-  // Menghitung jumlah postingan aktif
+  // Jumlah postingan aktif
   int get totalActiveArtworks => activeArtworks.length;
 
-  // Menghitung jumlah postingan terhapus
+  // Jumlah postingan terhapus
   int get totalDeletedArtworks => deletedArtworks.length;
 
-  // Mengambil karya yang disimpan dan masih aktif
+  // Karya tersimpan dan masih aktif
   List<Artwork> get savedArtworks =>
       activeArtworks.where((art) => art.isSaved).toList();
 
-  // Mengambil karya milik pengguna yang masih aktif
+  // Karya milik pengguna dan masih aktif
   List<Artwork> get myArtworks =>
       activeArtworks.where((art) => art.creator == userName).toList();
 
-  // Mencari postingan berdasarkan ID
+  // Cari artwork berdasarkan ID
   Artwork? getArtworkById(String id) {
     try {
       return artworks.firstWhere((art) => art.id == id);
@@ -122,56 +253,32 @@ class CreArtStore extends ChangeNotifier {
     }
   }
 
-  // Mengubah status postingan menjadi terhapus
-  bool deleteArtwork(String id) {
+  // Soft delete artwork melalui Firebase
+  Future<bool> deleteArtwork(String id) async {
     final artwork = getArtworkById(id);
 
     if (artwork == null || artwork.status == 'terhapus') {
       return false;
     }
 
-    artwork.status = 'terhapus';
-    notifyListeners();
-    return true;
+    try {
+      await _artworksRef.doc(id).update({
+        'status': 'terhapus',
+      });
+
+      artwork.status = 'terhapus';
+      notifyListeners();
+
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
-  void addArtwork({
-    required String title,
-    required String description,
-    required String category,
-  }) {
-    artworks.insert(
-      0,
-      Artwork(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        title: title,
-        creator: userName,
-        category: category,
-        description: description,
-        color1: const Color(0xFFE9DDFB),
-        color2: const Color(0xFFD8E8E3),
-      ),
-    );
-    notifyListeners();
-  }
-
-  void toggleLike(Artwork artwork) {
-    if (artwork.status == 'terhapus') return;
-
-    artwork.isLiked = !artwork.isLiked;
-    artwork.likes += artwork.isLiked ? 1 : -1;
-    notifyListeners();
-  }
-
-  void toggleSave(Artwork artwork) {
-    if (artwork.status == 'terhapus') return;
-
-    artwork.isSaved = !artwork.isSaved;
-    notifyListeners();
-  }
-
+  // Menambahkan komentar lokal
   void addComment(String comment) {
     if (comment.trim().isEmpty) return;
+
     comments.insert(0, comment.trim());
     notifyListeners();
   }
@@ -180,6 +287,7 @@ class CreArtStore extends ChangeNotifier {
     if (identifier.trim().isEmpty || password.trim().isEmpty) {
       return false;
     }
+
     return true;
   }
 
@@ -217,7 +325,7 @@ class CreArtStore extends ChangeNotifier {
     userName = name;
     this.username = username;
     this.bio = bio;
+
     notifyListeners();
   }
 }
-

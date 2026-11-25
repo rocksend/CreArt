@@ -326,50 +326,55 @@ class BerandaAdminPage extends StatelessWidget {
   }
 
   // Konfirmasi penghapusan postingan
-  void _confirmDelete(
-    BuildContext context,
-    Artwork artwork,
-    CreArtStore store,
-  ) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Hapus Postingan?'),
-          content: Text(
-            'Apakah kamu yakin ingin menghapus postingan "${artwork.title}"? '
-            'Status postingan akan diubah menjadi terhapus.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () {
-                final success = store.deleteArtwork(artwork.id);
+  // Konfirmasi penghapusan postingan
+void _confirmDelete(
+  BuildContext context,
+  Artwork artwork,
+  CreArtStore store,
+) {
+  showDialog(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        title: const Text('Hapus Postingan?'),
+        content: Text(
+          'Apakah kamu yakin ingin menghapus postingan "${artwork.title}"? '
+          'Status postingan akan diubah menjadi terhapus.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+  try {
+    final success = await store.deleteArtwork(artwork.id);
 
-                Navigator.pop(dialogContext);
+    if (!dialogContext.mounted) return;
+    Navigator.pop(dialogContext);
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success
-                          ? 'Postingan berhasil dihapus.'
-                          : 'Postingan gagal dihapus.',
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Hapus'),
-            ),
-          ],
-        );
-      },
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Postingan berhasil dihapus.'
+              : 'Postingan gagal dihapus.',
+        ),
+      ),
+    );
+  } catch (e) {
+    if (!dialogContext.mounted) return;
+    Navigator.pop(dialogContext);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Postingan gagal dihapus.'),
+      ),
     );
   }
+},
+            child: const Text('Hapus'),
+          ),
+        ],
+      );
+    },
+  );
+}
 }

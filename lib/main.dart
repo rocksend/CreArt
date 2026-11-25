@@ -1,6 +1,16 @@
+
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'pages/login_page.dart';
-void main() {
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const CreArtApp());
 }
 
@@ -36,15 +46,22 @@ class CreArtApp extends StatelessWidget {
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE9E3F0)),
+            borderSide: const BorderSide(
+              color: Color(0xFFE9E3F0),
+            ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE9E3F0)),
+            borderSide: const BorderSide(
+              color: Color(0xFFE9E3F0),
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF7052C8), width: 1.5),
+            borderSide: const BorderSide(
+              color: Color(0xFF7052C8),
+              width: 1.5,
+            ),
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -65,7 +82,7 @@ class CreArtApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginPage(), // Langsung memanggil LoginPage
+      home: const LoginPage(),
     );
   }
 }

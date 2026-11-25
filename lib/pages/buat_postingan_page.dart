@@ -1,32 +1,129 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../creart_store.dart';
 
 class BuatPostinganPage extends StatefulWidget {
-  const BuatPostinganPage({super.key});
+  final VoidCallback? onPublished;
+
+  const BuatPostinganPage({
+    super.key,
+    this.onPublished,
+  });
 
   @override
   State<BuatPostinganPage> createState() => _BuatPostinganPageState();
 }
 
 class _BuatPostinganPageState extends State<BuatPostinganPage> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
+
   bool _isVisual = true;
+  bool _isLoading = false;
   String? _selectedCategory;
+  File? _selectedImage;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    if (_isLoading) return;
+
+    try {
+      final XFile? picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (picked != null && mounted) {
+        setState(() {
+          _selectedImage = File(picked.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal membuka galeri: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _publishArtwork() async {
+    if (_isLoading) return;
+
+    final title = _titleController.text.trim();
+    final desc = _descController.text.trim();
+
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Judul karya wajib diisi!')),
+      );
+      return;
+    }
+
+    if (_selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan pilih kategori karya!')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await CreArtStore.instance.addArtwork(
+        title: title,
+        description: desc.isEmpty ? 'Karya seni tanpa deskripsi.' : desc,
+        category: _selectedCategory!,
+        imageFile: _selectedImage,
+      );
+
+      if (!mounted) return;
+
+      _titleController.clear();
+      _descController.clear();
+      setState(() {
+        _selectedCategory = null;
+        _selectedImage = null;
+        _isLoading = false;
+      });
+
+      if (widget.onPublished != null) {
+        widget.onPublished!();
+      } else if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal mempublikasikan: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Buat postingan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text(
+          'Buat postingan',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
         centerTitle: true,
-        actions: [
-          IconButton(icon: const Icon(Icons.more_horiz), onPressed: () {}),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Toggle Visual / Tulisan
             Row(
               children: [
                 Expanded(
@@ -38,7 +135,9 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
                       foregroundColor: _isVisual
                           ? Colors.white
                           : Theme.of(context).colorScheme.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     onPressed: () => setState(() => _isVisual = true),
                     child: const Text('Karya visual'),
@@ -55,7 +154,9 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
                           ? Theme.of(context).colorScheme.primary
                           : Colors.white,
                       side: const BorderSide(color: Color(0xFFE9E3F0)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     onPressed: () => setState(() => _isVisual = false),
                     child: const Text('Tulisan'),
@@ -64,53 +165,129 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
               ],
             ),
             const SizedBox(height: 24),
-            // Upload Box
-            Container(
-              height: 150,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F0FC),
-                border: Border.all(color: const Color(0xFFDCD1F2)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _isVisual ? Icons.upload_file : Icons.edit_note,
-                    size: 32,
-                    color: Color(0xFF7052C8),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    _isVisual
-                        ? 'Pilih karya dari perangkat'
-                        : 'Tambahkan sampul tulisan (opsional)',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    _isVisual
-                        ? 'Pratinjau karya akan muncul di sini'
-                        : 'Kamu bisa menulis cerita di bagian deskripsi',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+
+            // Box Upload Gambar (Tap untuk pilih dari galeri)
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                height: 170,
+                width: double.infinity,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F0FC),
+                  border: Border.all(color: const Color(0xFFDCD1F2)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: _selectedImage != null
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.file(
+                            _selectedImage!,
+                            fit: BoxFit.cover,
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Colors.black54,
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                icon: const Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () {
+                                  setState(() => _selectedImage = null);
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _isVisual ? Icons.upload_file : Icons.edit_note,
+                            size: 32,
+                            color: const Color(0xFF7052C8),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _isVisual
+                                ? 'Pilih karya dari perangkat'
+                                : 'Tambahkan sampul tulisan (opsional)',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _isVisual
+                                ? 'Ketuk untuk memilih gambar dari galeri'
+                                : 'Ketuk untuk memilih gambar sampul',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
               ),
             ),
             const SizedBox(height: 20),
-            // Form Inputs
-            const Text('Judul karya', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+
+            const Text(
+              'Judul karya',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            ),
             const SizedBox(height: 8),
-            _buildTextField('Beri judul untuk karyamu'),
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                hintText: 'Beri judul untuk karyamu',
+                hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
-            
-            const Text('Deskripsi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+
+            const Text(
+              'Deskripsi',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            ),
             const SizedBox(height: 8),
-            _buildTextField('Ceritakan ide atau proses di balik karya ini...', maxLines: 3),
+            TextField(
+              controller: _descController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Ceritakan ide atau proses di balik karya ini...',
+                hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
-            
-            const Text('Kategori', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+
+            const Text(
+              'Kategori',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -122,48 +299,55 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
                 child: DropdownButton<String>(
                   isExpanded: true,
                   value: _selectedCategory,
-                  hint: const Text('Pilih kategori seni', style: TextStyle(fontSize: 14)),
-                  items: <String>['Ilustrasi', 'Fotografi', 'Desain'].map((String value) {
-                    return DropdownMenuItem<String>(value: value, child: Text(value));
+                  hint: const Text(
+                    'Pilih kategori seni',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  items: <String>[
+                    'Ilustrasi',
+                    'Fotografi',
+                    'Desain',
+                    'Digital Art',
+                  ].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
                   }).toList(),
                   onChanged: (value) => setState(() => _selectedCategory = value),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            
-            const Text('Tag (opsional)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-            const SizedBox(height: 8),
-            _buildTextField('Misalnya: kota, senja, sketsa'),
-            
             const SizedBox(height: 32),
+
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                onPressed: () {},
-                child: const Text('Publikasikan karya', style: TextStyle(color: Colors.white)),
+                onPressed: _isLoading ? null : _publishArtwork,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Publikasikan karya',
+                        style: TextStyle(color: Colors.white),
+                      ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(String hint, {int maxLines = 1}) {
-    return TextField(
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }
