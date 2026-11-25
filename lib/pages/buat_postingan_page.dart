@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../creart_store.dart';
 
 class BuatPostinganPage extends StatefulWidget {
@@ -16,16 +19,40 @@ class BuatPostinganPage extends StatefulWidget {
 class _BuatPostinganPageState extends State<BuatPostinganPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
 
   bool _isVisual = true;
   bool _isLoading = false;
   String? _selectedCategory;
+  File? _selectedImage;
 
   @override
   void dispose() {
     _titleController.dispose();
     _descController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    if (_isLoading) return;
+
+    try {
+      final XFile? picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (picked != null && mounted) {
+        setState(() {
+          _selectedImage = File(picked.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal membuka galeri: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _publishArtwork() async {
@@ -55,6 +82,7 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
         title: title,
         description: desc.isEmpty ? 'Karya seni tanpa deskripsi.' : desc,
         category: _selectedCategory!,
+        imageFile: _selectedImage,
       );
 
       if (!mounted) return;
@@ -63,6 +91,7 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
       _descController.clear();
       setState(() {
         _selectedCategory = null;
+        _selectedImage = null;
         _isLoading = false;
       });
 
@@ -136,41 +165,80 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
               ],
             ),
             const SizedBox(height: 24),
-            Container(
-              height: 150,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F0FC),
-                border: Border.all(color: const Color(0xFFDCD1F2)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _isVisual ? Icons.upload_file : Icons.edit_note,
-                    size: 32,
-                    color: const Color(0xFF7052C8),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _isVisual
-                        ? 'Pilih karya dari perangkat'
-                        : 'Tambahkan sampul tulisan (opsional)',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _isVisual
-                        ? 'Pratinjau karya akan muncul di sini'
-                        : 'Kamu bisa menulis cerita di bagian deskripsi',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+
+            // Box Upload Gambar (Tap untuk pilih dari galeri)
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                height: 170,
+                width: double.infinity,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F0FC),
+                  border: Border.all(color: const Color(0xFFDCD1F2)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: _selectedImage != null
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.file(
+                            _selectedImage!,
+                            fit: BoxFit.cover,
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Colors.black54,
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                icon: const Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () {
+                                  setState(() => _selectedImage = null);
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _isVisual ? Icons.upload_file : Icons.edit_note,
+                            size: 32,
+                            color: const Color(0xFF7052C8),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _isVisual
+                                ? 'Pilih karya dari perangkat'
+                                : 'Tambahkan sampul tulisan (opsional)',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _isVisual
+                                ? 'Ketuk untuk memilih gambar dari galeri'
+                                : 'Ketuk untuk memilih gambar sampul',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
               ),
             ),
             const SizedBox(height: 20),
+
             const Text(
               'Judul karya',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
@@ -192,6 +260,7 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
               ),
             ),
             const SizedBox(height: 16),
+
             const Text(
               'Deskripsi',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
@@ -214,6 +283,7 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
               ),
             ),
             const SizedBox(height: 16),
+
             const Text(
               'Kategori',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
@@ -249,6 +319,7 @@ class _BuatPostinganPageState extends State<BuatPostinganPage> {
               ),
             ),
             const SizedBox(height: 32),
+
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

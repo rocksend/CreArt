@@ -17,7 +17,7 @@ class _DetailPostinganPageState extends State<DetailPostinganPage> {
   final CreArtStore _store = CreArtStore.instance;
   final TextEditingController _commentController = TextEditingController();
 
-  final Map<String, List>_commentsByArtworkId = {
+  final Map<String, List> _commentsByArtworkId = {
     '1': [
       {
         'author': 'Ayu Laras',
@@ -88,25 +88,40 @@ class _DetailPostinganPageState extends State<DetailPostinganPage> {
                 Container(
                   height: 240,
                   width: double.infinity,
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        artwork.color1,
-                        artwork.color2,
-                        const Color(0xFFD8E8E3),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    gradient: artwork.imageUrl == null
+                        ? LinearGradient(
+                            colors: [
+                              artwork.color1,
+                              artwork.color2,
+                              const Color(0xFFD8E8E3),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.palette_outlined,
-                      size: 48,
-                      color: Color(0xFF7052C8),
-                    ),
-                  ),
+                  child: artwork.imageUrl != null
+                      ? Image.network(
+                          artwork.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Center(
+                            child: Icon(
+                              Icons.palette_outlined,
+                              size: 48,
+                              color: Color(0xFF7052C8),
+                            ),
+                          ),
+                        )
+                      : const Center(
+                          child: Icon(
+                            Icons.palette_outlined,
+                            size: 48,
+                            color: Color(0xFF7052C8),
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 16),
                 Text(

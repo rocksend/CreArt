@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class Artwork {
   final String id;
@@ -7,6 +11,7 @@ class Artwork {
   final String creator;
   final String category;
   final String description;
+  final String? imageUrl;
   final Color color1;
   final Color color2;
   final DateTime createdAt;
@@ -21,6 +26,7 @@ class Artwork {
     required this.creator,
     required this.category,
     required this.description,
+    this.imageUrl,
     this.color1 = const Color(0xFFE9DDFB),
     this.color2 = const Color(0xFFF3C7A7),
     this.likes = 0,
@@ -35,6 +41,7 @@ class Artwork {
       'creator': creator,
       'category': category,
       'description': description,
+      'imageUrl': imageUrl,
       'color1': color1.value,
       'color2': color2.value,
       'likes': likes,
@@ -46,12 +53,16 @@ class Artwork {
 
   factory Artwork.fromFirestore(String docId, Map<String, dynamic> data) {
     final ts = data['createdAt'];
+    final rawImageUrl = data['imageUrl'];
     return Artwork(
       id: docId,
       title: data['title'] ?? '',
       creator: data['creator'] ?? '',
       category: data['category'] ?? 'Lainnya',
       description: data['description'] ?? '',
+      imageUrl: (rawImageUrl is String && rawImageUrl.isNotEmpty)
+          ? rawImageUrl
+          : null,
       color1: Color(data['color1'] ?? 0xFFE9DDFB),
       color2: Color(data['color2'] ?? 0xFFF3C7A7),
       likes: data['likes'] ?? 0,
@@ -68,6 +79,10 @@ class CreArtStore extends ChangeNotifier {
   }
 
   static final CreArtStore instance = CreArtStore._();
+
+  // <-- INI BAGIAN YANG DIGANTI (baris 83-84)
+  static const String _cloudinaryCloudName = 'wbesiexk';
+  static const String _cloudinaryUploadPreset = 'creart_unsigned';
 
   final _artworksRef = FirebaseFirestore.instance.collection('artworks');
 
@@ -96,17 +111,52 @@ class CreArtStore extends ChangeNotifier {
     });
   }
 
+  Future<String> _uploadToCloudinary(File imageFile) async {
+    final uri = Uri.parse(
+      'https://api.cloudinary.com/v1_1/$_cloudinaryCloudName/image/upload',
+    );
+
+    final request = http.MultipartRequest('POST', uri)
+      ..fields['upload_preset'] = _cloudinaryUploadPreset
+      ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+
+    final streamedResponse = await request.send();
+    final responseBody = await streamedResponse.stream.bytesToString();
+
+    if (streamedResponse.statusCode != 200 &&
+        streamedResponse.statusCode != 201) {
+      throw Exception(
+        'Upload ke Cloudinary gagal (${streamedResponse.statusCode}): $responseBody',
+      );
+    }
+
+    final decoded = jsonDecode(responseBody) as Map<String, dynamic>;
+    final secureUrl = decoded['secure_url'] as String?;
+    if (secureUrl == null || secureUrl.isEmpty) {
+      throw Exception('URL gambar tidak ditemukan pada respons Cloudinary.');
+    }
+
+    return secureUrl;
+  }
+
   Future<void> addArtwork({
     required String title,
     required String description,
     required String category,
+    File? imageFile,
   }) async {
+    String? uploadedImageUrl;
+    if (imageFile != null) {
+      uploadedImageUrl = await _uploadToCloudinary(imageFile);
+    }
+
     final newArt = Artwork(
       id: '',
       title: title,
       creator: userName,
       category: category,
       description: description,
+      imageUrl: uploadedImageUrl,
     );
 
     await _artworksRef.add(newArt.toMap());

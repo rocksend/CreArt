@@ -12,7 +12,7 @@ class BerandaPage extends StatefulWidget {
 class _BerandaPageState extends State<BerandaPage> {
   final CreArtStore _store = CreArtStore.instance;
   final TextEditingController _searchController = TextEditingController();
-  
+
   String _selectedCategory = 'Semua';
   String _searchQuery = '';
 
@@ -42,7 +42,6 @@ class _BerandaPageState extends State<BerandaPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // Logika Filter Kategori + Search
           final filteredArtworks = _store.artworks.where((art) {
             final matchesCategory = _selectedCategory == 'Semua' ||
                 art.category.toLowerCase() == _selectedCategory.toLowerCase();
@@ -59,7 +58,10 @@ class _BerandaPageState extends State<BerandaPage> {
               children: [
                 Text(
                   'Halo, ${_store.userName}.',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Text(
                   'Temukan ide untuk karya berikutnya.',
@@ -125,7 +127,10 @@ class _BerandaPageState extends State<BerandaPage> {
                   children: [
                     const Text(
                       'Untuk inspirasimu',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     TextButton(
                       onPressed: () {},
@@ -165,7 +170,10 @@ class _BerandaPageState extends State<BerandaPage> {
                   children: [
                     const Text(
                       'Karya terbaru',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     TextButton(
                       onPressed: () {},
@@ -177,7 +185,6 @@ class _BerandaPageState extends State<BerandaPage> {
                   ],
                 ),
 
-                // Vertical List: Terhubung ke Firestore & Bisa di-klik
                 if (filteredArtworks.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 16.0),
@@ -251,23 +258,41 @@ class _BerandaPageState extends State<BerandaPage> {
           children: [
             Container(
               height: 140,
+              width: double.infinity,
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [art.color1, art.color2],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: art.imageUrl == null
+                    ? LinearGradient(
+                        colors: [art.color1, art.color2],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Center(
-                child: Text(
-                  art.category,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              child: art.imageUrl != null
+                  ? Image.network(
+                      art.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Text(
+                          art.category,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        art.category,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -327,19 +352,32 @@ class _BerandaPageState extends State<BerandaPage> {
             Container(
               width: 80,
               height: 80,
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [art.color1, art.color2],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: art.imageUrl == null
+                    ? LinearGradient(
+                        colors: [art.color1, art.color2],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                Icons.palette_outlined,
-                color: Theme.of(context).colorScheme.primary,
-                size: 28,
-              ),
+              child: art.imageUrl != null
+                  ? Image.network(
+                      art.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.palette_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 28,
+                      ),
+                    )
+                  : Icon(
+                      Icons.palette_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 28,
+                    ),
             ),
             const SizedBox(width: 16),
             Expanded(
