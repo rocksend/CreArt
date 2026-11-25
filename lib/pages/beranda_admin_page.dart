@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+import '../auth_service.dart';
 
 class BerandaAdminPage extends StatelessWidget {
   const BerandaAdminPage({super.key});
@@ -8,7 +11,22 @@ class BerandaAdminPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin CreArt', style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [IconButton(icon: const Icon(Icons.logout), onPressed: () {})],
+        actions: [
+          IconButton(
+            tooltip: 'Keluar',
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              try {
+                await CreArtAuthService.instance.signOut();
+              } on FirebaseException catch (error) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(authErrorMessage(error))),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
