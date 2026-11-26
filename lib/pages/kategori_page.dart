@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
-class KategoriPage extends StatelessWidget {
+class KategoriPage extends StatefulWidget {
   const KategoriPage({super.key});
+
+  @override
+  State<KategoriPage> createState() => _KategoriPageState();
+}
+
+class _KategoriPageState extends State<KategoriPage> {
+  String _selectedCategory = 'Ilustrasi';
 
   @override
   Widget build(BuildContext context) {
@@ -34,26 +41,49 @@ class KategoriPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             // List Kategori
-            _buildCategoryItem('Ilustrasi', 'Sketsa, karakter, dan cerita visual'),
-            _buildCategoryItem('Fotografi', 'Momen dari sudut pandang'),
-            _buildCategoryItem('Desain', 'Bentuk, tata letak, dan identitas'),
-            _buildCategoryItem('Digital Art', 'Eksperimen seni digital'),
-            _buildCategoryItem('Lainnya', 'Tulisan dan bentuk kreatif lainnya'),
+            _buildCategoryItem(
+              'Ilustrasi',
+              'Sketsa, karakter, dan cerita visual',
+              Icons.draw_outlined,
+            ),
+            _buildCategoryItem(
+              'Fotografi',
+              'Momen dari sudut pandang',
+              Icons.camera_alt_outlined,
+            ),
+            _buildCategoryItem(
+              'Desain',
+              'Bentuk, tata letak, dan identitas',
+              Icons.auto_awesome_outlined,
+            ),
+            _buildCategoryItem(
+              'Digital Art',
+              'Eksperimen seni digital',
+              Icons.palette_outlined,
+            ),
+            _buildCategoryItem(
+              'Lainnya',
+              'Tulisan dan bentuk kreatif lainnya',
+              Icons.more_horiz,
+            ),
             const SizedBox(height: 24),
             // Section Pilihan
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Pilihan Ilustrasi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                  'Pilihan $_selectedCategory',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 TextButton(onPressed: () {}, child: const Text('Lihat semua', style: TextStyle(color: Colors.grey, fontSize: 12))),
               ],
             ),
             // Grid Pilihan
             Row(
               children: [
-                Expanded(child: _buildGridItem('Senja di Kota', '24')),
+                Expanded(child: _buildGridItem(context, 'Senja di Kota', '24')),
                 const SizedBox(width: 16),
-                Expanded(child: _buildGridItem('Kebun Imaji', '41')),
+                Expanded(child: _buildGridItem(context, 'Kebun Imaji', '41')),
               ],
             )
           ],
@@ -62,30 +92,57 @@ class KategoriPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryItem(String title, String subtitle) {
+  Widget _buildCategoryItem(String title, String subtitle, IconData icon) {
+    final isSelected = _selectedCategory == title;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
+        color: isSelected ? const Color(0xFFF5F0FC) : Colors.white,
+        border: Border.all(
+          color: isSelected
+              ? const Color(0x5C7052C8)
+              : const Color(0xFFE9E3F0),
+        ),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: isSelected
+              ? const Color(0xFFE9DDFB)
+              : const Color(0xFFF5F0FC),
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-        onTap: () {},
+        trailing: Icon(
+          isSelected ? Icons.check_circle : Icons.chevron_right,
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.grey,
+        ),
+        onTap: () => setState(() => _selectedCategory = title),
       ),
     );
   }
 
-  Widget _buildGridItem(String title, String likes) {
+  Widget _buildGridItem(BuildContext context, String title, String likes) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           height: 120,
-          decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(8)),
-          child: const Center(child: Text('Ilustrasi', style: TextStyle(color: Colors.grey))),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFF3C7A7), Color(0xFFE9DDFB)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.palette_outlined,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
         const SizedBox(height: 8),
         Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),

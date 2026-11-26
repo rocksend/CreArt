@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1031038746381",
+    "project_id": "creart-feaf1",
+    "storage_bucket": "creart-feaf1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1031038746381:android:e50f16bcaf33aff94afa44",
+        "android_client_info": {
+          "package_name": "com.example.creart"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8q5A0JY-WzriA2Vn-PNF-ioKlxoGs7bY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
