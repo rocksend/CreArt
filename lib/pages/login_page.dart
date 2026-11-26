@@ -2,9 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../auth_service.dart';
-import 'main_navigation.dart';
 import 'registrasi_page.dart';
-import 'beranda_admin_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -40,26 +38,6 @@ class _LoginPageState extends State<LoginPage> {
       await CreArtAuthService.instance.signIn(
         identifier: _identifierController.text,
         password: _passwordController.text,
-      );
-
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        throw FirebaseAuthException(code: 'user-not-found');
-      }
-
-      final isAdmin =
-          await CreArtAuthService.instance.isAdmin(user.uid);
-
-      if (!mounted) return;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => isAdmin
-              ? const BerandaAdminPage()
-              : const MainNavigation(),
-        ),
       );
     } on FirebaseAuthException catch (error) {
       if (mounted) {

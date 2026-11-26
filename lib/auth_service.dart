@@ -61,6 +61,7 @@ class CreArtAuthService {
         transaction.set(userRef, {
           'uid': user.uid,
           'displayName': fullName.trim(),
+          'creatorNames': [fullName.trim()],
           'username': username.trim(),
           'usernameLowercase': normalizedUsername,
           'email': normalizedEmail,
@@ -86,6 +87,81 @@ class CreArtAuthService {
     await _auth.sendPasswordResetEmail(email: email);
   }
 
+  Future<bool> updateProfile({
+    required String fullName,
+    required String username,
+    required String email,
+    required String phoneNumber,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw StateError('Tidak ada pengguna yang masuk.');
+
+    final normalizedUsername = username.trim().toLowerCase();
+    final normalizedEmail = email.trim().toLowerCase();
+    final displayName = fullName.trim();
+    final previousDisplayName = user.displayName;
+    final normalizedPhoneNumber = phoneNumber.trim();
+    if (!RegExp(r'^[a-zA-Z0-9._]{3,20}$').hasMatch(username.trim())) {
+      throw ArgumentError('Format nama pengguna tidak valid.');
+    }
+
+    final usernameSnapshot = await _usernames.doc(normalizedUsername).get();
+    if (usernameSnapshot.exists &&
+        usernameSnapshot.data()?['uid'] != user.uid) {
+      throw FirebaseAuthException(code: 'username-already-in-use');
+    }
+
+    final emailUpdatePending = normalizedEmail != user.email?.toLowerCase();
+    if (emailUpdatePending) {
+      await user.verifyBeforeUpdateEmail(normalizedEmail);
+    }
+    if (displayName != user.displayName) {
+      await user.updateDisplayName(displayName);
+    }
+
+    final userRef = _users.doc(user.uid);
+    await _firestore.runTransaction((transaction) async {
+      final userSnapshot = await transaction.get(userRef);
+      final oldUsername = (userSnapshot.data()?['username'] as String? ?? '')
+          .toLowerCase();
+      final usernameRef = _usernames.doc(normalizedUsername);
+      final usernameSnapshot = await transaction.get(usernameRef);
+      if (usernameSnapshot.exists &&
+          usernameSnapshot.data()?['uid'] != user.uid) {
+        throw FirebaseAuthException(code: 'username-already-in-use');
+      }
+
+      DocumentSnapshot<Map<String, dynamic>>? oldUsernameSnapshot;
+      DocumentReference<Map<String, dynamic>>? oldUsernameRef;
+      if (oldUsername.isNotEmpty && oldUsername != normalizedUsername) {
+        oldUsernameRef = _usernames.doc(oldUsername);
+        oldUsernameSnapshot = await transaction.get(oldUsernameRef);
+      }
+
+      transaction.set(userRef, {
+        'uid': user.uid,
+        'displayName': displayName,
+        'creatorNames': FieldValue.arrayUnion([
+          if (previousDisplayName != null && previousDisplayName.isNotEmpty)
+            previousDisplayName,
+          displayName,
+        ]),
+        'username': username.trim(),
+        'usernameLowercase': normalizedUsername,
+        'email': user.email,
+        if (emailUpdatePending) 'pendingEmail': normalizedEmail,
+        if (!emailUpdatePending) 'pendingEmail': FieldValue.delete(),
+        'phoneNumber': normalizedPhoneNumber,
+      }, SetOptions(merge: true));
+      transaction.set(usernameRef, {'uid': user.uid, 'email': user.email});
+      if (oldUsernameRef != null &&
+          oldUsernameSnapshot?.data()?['uid'] == user.uid) {
+        transaction.delete(oldUsernameRef);
+      }
+    });
+    return emailUpdatePending;
+  }
+
   Future<bool> isAdmin(String uid) async {
     final profile = await _users.doc(uid).get();
     return profile.data()?['role'] == 'admin';
@@ -108,6 +184,7 @@ String authErrorMessage(Object error) {
         'Kata sandi terlalu lemah. Gunakan minimal 6 karakter.',
       'too-many-requests' =>
         'Terlalu banyak percobaan. Coba lagi beberapa saat.',
+      'requires-recent-login' => 'Masuk kembali sebelum mengubah email akun.',
       'network-request-failed' => 'Koneksi internet bermasalah. Coba lagi.',
       _ => error.message ?? 'Autentikasi gagal. Silakan coba lagi.',
     };
