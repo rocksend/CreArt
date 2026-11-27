@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import '../creart_store.dart';
-import 'beranda_admin_page.dart';
 import 'detail_postingan_page.dart';
 
 class BerandaPage extends StatefulWidget {
@@ -42,18 +41,6 @@ class _BerandaPageState extends State<BerandaPage> {
         ),
         centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.admin_panel_settings_outlined),
-            tooltip: 'Dashboard Admin',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const BerandaAdminPage(),
-                ),
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.notifications_none),
             onPressed: () {},
